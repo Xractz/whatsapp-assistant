@@ -6,7 +6,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require("dotenv").config();
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
-const axios = require("axios");
 
 async function connectWhatsapp() {
   const auth = await useMultiFileAuthState("session");
@@ -107,11 +106,11 @@ async function connectWhatsapp() {
         try {
           reply(Id, "waitt..", false, true, message);
           const prompt = await generateAi(msgCmd).catch((error) => {
-            reply(Id, `[ERROR] ${error.message}`, false, true);
+            reply(Id, `[ERROR] ${error.message}`, false, true, message);
             return console.log("[ERROR]", { aiErr: error.message });
           });
           // await delay(1000)
-          reply(Id, `*Prompt :* \`\`\`${msgCmd}\`\`\`\n\n${prompt}`, false, false, message);
+          reply(Id, `Powered by *Gemini AI*\n\n*AI Prompt :* \`\`\`${msgCmd}\`\`\`\n\n${prompt}`, false, false, message);
           console.log("[BOT] cmd:.ai from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { aiErr: error.message });
