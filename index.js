@@ -98,10 +98,10 @@ async function connectWhatsapp() {
 
           await sock.sendMessage(Id, message);
           console.log("[BOT] cmd:.steal from", Id.split("@")[0]);
-          break;
         } catch (error) {
           console.log("[ERROR]", { stealErr: error.message });
         }
+        break;
       case "ai":
         try {
           reply(Id, "waitt..", false, true, message);
@@ -112,10 +112,10 @@ async function connectWhatsapp() {
           // await delay(1000)
           reply(Id, `*Prompt :* \`\`\`${msgCmd}\`\`\`\n\n${prompt}`, false, false, message);
           console.log("[BOT] cmd:.ai from", Id.split("@")[0]);
-          break;
         } catch (error) {
           console.log("[ERROR]", { aiErr: error.message });
         }
+        break;
       case "sticker":
         try {
           const mediaBuffer = { message: quoted };
@@ -131,11 +131,11 @@ async function connectWhatsapp() {
           }).build()
           sock.sendMessage(Id, { sticker });
           console.log("[BOT] cmd:.sticker from", Id.split("@")[0]);
-          break;
         } catch (error) {
           reply(Id, `[ERROR] ${error.message}`, message);
           console.log("[ERROR]", { stickerErr: error.message });
         }
+        break;
     }
 
     if (!isMe && !isGroup) return;
@@ -150,10 +150,10 @@ async function connectWhatsapp() {
           await delay(2500);
           sock.sendMessage(Id, { react: { text: "🤖", key: sentMessage.key } });
           console.log("[BOT] cmd:.tagall from", Id.split("@")[0]);
-          break;
         } catch (error) {
           console.log("[ERROR]", { tagallErr: error.message });
         }
+        break;
       case "tag":
         try {
           const metadata = await sock.groupMetadata(Id);
@@ -164,10 +164,10 @@ async function connectWhatsapp() {
           await delay(2500);
           sock.sendMessage(Id, { react: { text: "🤖", key: sentMessage.key } });
           console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
-          break;
         } catch (error) {
           console.log("[ERROR]", { tagErr: error.message });
         }
+        break;
     }
 
     // switch (type) {
