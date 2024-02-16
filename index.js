@@ -119,8 +119,8 @@ async function connectWhatsapp() {
         break;
       case "sticker":
         try {
-          const mediaBuffer = { message: quoted };
-          const buffer = await getBuffer(mediaBuffer);
+          let mediaBuffer = quoted ? { message: quoted } : message;
+          let buffer = await getBuffer(mediaBuffer);
           const sticker = await new Sticker(buffer, {
             author: "Sticker",
             pack: "BOT",
