@@ -14,6 +14,7 @@ async function connectWhatsapp() {
     browser: ["SAM ASSISTANT", "Safari", "1.0.0"],
     auth: auth.state,
     logger: pino({ level: "silent" }),
+    generateHighQualityLinkPreview: true,
   });
 
   sock.ev.on("creds.update", auth.saveCreds);
@@ -126,7 +127,7 @@ async function connectWhatsapp() {
             type: StickerTypes.FULL,
             categories: ["🤩", "🎉"],
             id: "22222",
-            quality: 100,
+            quality: 70,
             background: "transparent",
           }).build();
           sock.sendMessage(Id, { sticker });
