@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "@whiskeysockets/baileys": "^6.6.0",
+    "dotenv": "^16.4.4",
+    "ffmpeg": "^0.0.4",
+    "fluent-ffmpeg": "^2.1.2",
+    "jimp": "^0.16.13",
+    "link-preview-js": "^3.0.5",
+    "nodemon": "^3.0.3",
+    "pino": "^8.18.0",
+    "qrcode-terminal": "^0.12.0",
+    "wa-sticker-formatter": "^4.4.4"
+  },
+  "name": "botwa",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "session/*.json"
+    ]
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
