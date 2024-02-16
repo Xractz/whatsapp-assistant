@@ -6,6 +6,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require("dotenv").config();
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
+const axios = require("axios");
 
 async function connectWhatsapp() {
   const auth = await useMultiFileAuthState("session");
@@ -128,12 +129,32 @@ async function connectWhatsapp() {
             id: "22222",
             quality: 100,
             background: "transparent",
-          }).build()
+          }).build();
           sock.sendMessage(Id, { sticker });
           console.log("[BOT] cmd:.sticker from", Id.split("@")[0]);
         } catch (error) {
           reply(Id, `[ERROR] ${error.message}`, message);
           console.log("[ERROR]", { stickerErr: error.message });
+        }
+        break;
+      case "pp":
+        try {
+          let pp = msgCmd.replace(/\D/g, "");
+          pp = pp + "@s.whatsapp.net";
+          const ppUrl = await sock.profilePictureUrl(pp, "image");
+          await sock.sendMessage(Id, { image: { url: ppUrl } });
+          console.log("[BOT] cmd:.pp from", Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { ppErr: error.message });
+        }
+        break;
+      case "gpp":
+        try {
+          const ppUrl = await sock.profilePictureUrl(Id, "image");
+          await sock.sendMessage(Id, { image: { url: ppUrl } });
+          console.log("[BOT] cmd:.gpp from", Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { ppErr: error.message });
         }
         break;
     }
