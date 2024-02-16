@@ -96,13 +96,13 @@ async function connectWhatsapp() {
           if (quotedViewOnceMime === "audioMessage") {
             message.ptt = true;
           }
-
           await sock.sendMessage(Id, message);
           console.log("[BOT] cmd:.steal from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { stealErr: error.message });
         }
         break;
+
       case "ai":
         try {
           reply(Id, "waitt..", false, true, message);
@@ -110,13 +110,13 @@ async function connectWhatsapp() {
             reply(Id, `[ERROR] ${error.message}`, false, true, message);
             return console.log("[ERROR]", { aiErr: error.message });
           });
-          // await delay(1000)
           reply(Id, `Powered by *Gemini AI*\n\n*AI Prompt :* \`\`\`${msgCmd}\`\`\`\n\n${prompt}`, false, false, message);
           console.log("[BOT] cmd:.ai from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { aiErr: error.message });
         }
         break;
+
       case "sticker":
         try {
           let mediaBuffer = quoted ? { message: quoted } : message;
@@ -137,6 +137,7 @@ async function connectWhatsapp() {
           console.log("[ERROR]", { stickerErr: error.message });
         }
         break;
+
       case "pp":
         try {
           let pp = msgCmd.replace(/\D/g, "");
@@ -148,6 +149,7 @@ async function connectWhatsapp() {
           console.log("[ERROR]", { ppErr: error.message });
         }
         break;
+
       case "gpp":
         try {
           const ppUrl = await sock.profilePictureUrl(Id, "image");
@@ -175,6 +177,7 @@ async function connectWhatsapp() {
           console.log("[ERROR]", { tagallErr: error.message });
         }
         break;
+
       case "tag":
         try {
           const metadata = await sock.groupMetadata(Id);
@@ -187,6 +190,29 @@ async function connectWhatsapp() {
           console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { tagErr: error.message });
+        }
+        break;
+
+      case "rm":
+        try {
+          let no = msgCmd.replace(/\D/g, "");
+          no = no + "@s.whatsapp.net";
+          const response = await sock.groupParticipantsUpdate(Id, [no], "remove");
+          console.log(response);
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${no} from`, Id.split("@"));
+        } catch (error) {
+          console.log("[ERROR]", { rmErr: error.message });
+        }
+        break;
+
+      case "add":
+        try {
+          let no = msgCmd.replace(/\D/g, "");
+          no = no + "@s.whatsapp.net";
+          const response = await sock.groupParticipantsUpdate(Id, [no], "add");
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.add ${no} from`, Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { addErr: error.message });
         }
         break;
     }
