@@ -161,7 +161,7 @@ async function connectWhatsapp() {
         break;
     }
 
-    if (!isMe && !isGroup) return;
+    if (!isMe && isGroup) return;
     switch (cmd) {
       case "tagall":
         try {
@@ -195,10 +195,9 @@ async function connectWhatsapp() {
 
       case "rm":
         try {
-          let no = msgCmd.replace(/\D/g, "");
-          no = no + "@s.whatsapp.net";
-          const response = await sock.groupParticipantsUpdate(Id, [no], "remove");
-          console.log(response);
+          let no = msgCmd.split(" ");
+          no = no.map((no) => no.replace("@", "") + '@s.whatsapp.net');
+          const response = await sock.groupParticipantsUpdate(Id, no, "remove");
           if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${no} from`, Id.split("@"));
         } catch (error) {
           console.log("[ERROR]", { rmErr: error.message });
