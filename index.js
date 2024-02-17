@@ -199,7 +199,9 @@ async function connectWhatsapp() {
       case "rm":
         try {
           let no = msgCmd.split(" ");
+          let noMsg = no.join(", ");
           no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
+          reply(Id, `Successfully remove ${noMsg}`, false, true, message, no);
           const response = await sock.groupParticipantsUpdate(Id, no, "remove");
           if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${no} from`, Id.split("@"));
         } catch (error) {
@@ -210,8 +212,9 @@ async function connectWhatsapp() {
       case "add":
         try {
           let no = msgCmd.replace(/\D/g, "");
-          no = no + "@s.whatsapp.net";
-          const response = await sock.groupParticipantsUpdate(Id, [no], "add");
+          let noId = no + "@s.whatsapp.net";
+          reply(Id, `Successfully add @${no}`, false, true, message, [noId]);
+          const response = await sock.groupParticipantsUpdate(Id, [noId], "add");
           if (response[0].status === "200") return console.log(`[BOT] cmd:.add ${no} from`, Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { addErr: error.message });
@@ -221,7 +224,9 @@ async function connectWhatsapp() {
       case "promote":
         try {
           let no = msgCmd.split(" ");
+          let noMsg = no.join(", ");
           no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
+          reply(Id, `Successfully promote ${noMsg}`, false, true, message, no);
           const response = await sock.groupParticipantsUpdate(Id, no, "promote");
           if (response[0].status === "200") return console.log(`[BOT] cmd:.promote ${no} from`, Id.split("@")[0]);
         } catch (error) {
@@ -232,7 +237,9 @@ async function connectWhatsapp() {
       case "demote":
         try {
           let no = msgCmd.split(" ");
+          let noMsg = no.join(", ");
           no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
+          reply(Id, `Successfully demote ${noMsg}`, false, true, message, no);
           const response = await sock.groupParticipantsUpdate(Id, no, "demote");
           if (response[0].status === "200") return console.log(`[BOT] cmd:.demote ${no} from`, Id.split("@")[0]);
         } catch (error) {
