@@ -26,7 +26,7 @@ async function connectWhatsapp() {
     }
   });
 
-  async function reply(Id, text, quoted = false, reactions = false, editMsg = false) {
+  async function reply(Id, text, quoted = false, reactions = false, editMsg = false, mention = false) {
     await delay(2500);
     let messageObj = { text: text };
 
@@ -34,6 +34,9 @@ async function connectWhatsapp() {
       messageObj.edit = editMsg.key;
     }
 
+    if (mention) {
+      messageObj.mentions = mention;
+    }
     const sentMessage = await sock.sendMessage(Id, messageObj, quoted ? { quoted: quoted } : {});
 
     if (reactions) return;
@@ -220,7 +223,7 @@ async function connectWhatsapp() {
           let no = msgCmd.split(" ");
           no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
           const response = await sock.groupParticipantsUpdate(Id, no, "promote");
-          if (response[0].status === "200") return console.log(`[BOT] cmd:.promote ${no} from`, Id.split("@"));
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.promote ${no} from`, Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { promoteErr: error.message });
         }
@@ -231,7 +234,7 @@ async function connectWhatsapp() {
           let no = msgCmd.split(" ");
           no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
           const response = await sock.groupParticipantsUpdate(Id, no, "demote");
-          if (response[0].status === "200") return console.log(`[BOT] cmd:.demote ${no} from`, Id.split("@"));
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.demote ${no} from`, Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { demoteErr: error.message });
         }
