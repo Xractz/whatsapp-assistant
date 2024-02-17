@@ -6,7 +6,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require("dotenv").config();
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
-const { ppid } = require("process");
 
 async function connectWhatsapp() {
   const auth = await useMultiFileAuthState("session");
