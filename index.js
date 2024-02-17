@@ -6,6 +6,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require("dotenv").config();
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
+const { ppid } = require("process");
 
 async function connectWhatsapp() {
   const auth = await useMultiFileAuthState("session");
@@ -92,14 +93,16 @@ async function connectWhatsapp() {
     switch (cmd) {
       case "see":
         try {
+          reply(Id, "Getting media message...", false, true, message);
           const mediaBuffer = { message: quoted };
           const buffer = await getBuffer(mediaBuffer);
           const mediaData = Buffer.from(buffer.toString("base64"), "base64");
-          const message = { [quotedViewOnceMime.split("Message")[0]]: mediaData, mimetype: quotedViewOnceMimeType };
+          const sentMessage = { [quotedViewOnceMime.split("Message")[0]]: mediaData, mimetype: quotedViewOnceMimeType };
           if (quotedViewOnceMime === "audioMessage") {
             message.ptt = true;
           }
-          await sock.sendMessage(Id, message);
+          await sock.sendMessage(Id, sentMessage);
+          reply(Id, "Successfully get the media message", false, true, message);
           console.log("[BOT] cmd:.steal from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { stealErr: error.message });
@@ -122,6 +125,7 @@ async function connectWhatsapp() {
 
       case "sticker":
         try {
+          reply(Id, "Converting to sticker...", false, true, message);
           let mediaBuffer = quoted ? { message: quoted } : message;
           let buffer = await getBuffer(mediaBuffer);
           const sticker = await new Sticker(buffer, {
@@ -134,29 +138,36 @@ async function connectWhatsapp() {
             background: "transparent",
           }).build();
           sock.sendMessage(Id, { sticker });
+          reply(Id, "Successfully convert media to sticker", false, true, message);
           console.log("[BOT] cmd:.sticker from", Id.split("@")[0]);
         } catch (error) {
-          reply(Id, `[ERROR] ${error.message}`, message);
+          reply(Id, `[ERROR] ${error.message}`, message, true, message);
           console.log("[ERROR]", { stickerErr: error.message });
         }
         break;
 
       case "pp":
+        let pp, ppId;
         try {
-          let pp = msgCmd.replace(/\D/g, "");
-          pp = pp + "@s.whatsapp.net";
-          const ppUrl = await sock.profilePictureUrl(pp, "image");
+          reply(Id, "Getting profile picture...", false, true, message);
+          pp = msgCmd.replace(/\D/g, "");
+          ppId = pp + "@s.whatsapp.net";
+          const ppUrl = await sock.profilePictureUrl(ppId, "image");
           await sock.sendMessage(Id, { image: { url: ppUrl } });
+          reply(Id, `Successfully get profile picture @${pp}`, false, true, message, [ppId]);
           console.log("[BOT] cmd:.pp from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { ppErr: error.message });
+          reply(Id, `No profile picture @${pp}`, false, true, message, [ppId]);
         }
         break;
 
       case "gpp":
         try {
+          reply(Id, "Getting profile picture...", false, true, message);
           const ppUrl = await sock.profilePictureUrl(Id, "image");
           await sock.sendMessage(Id, { image: { url: ppUrl } });
+          reply(Id, "Successfully get profile picture", false, true, message);
           console.log("[BOT] cmd:.gpp from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { ppErr: error.message });
@@ -170,11 +181,7 @@ async function connectWhatsapp() {
         try {
           const metadata = await sock.groupMetadata(Id);
           const participants = metadata.participants.map((v) => v.id);
-
-          await delay(2000);
-          let sentMessage = await sock.sendMessage(Id, { text: "PING!!!", mentions: participants, edit: message.key });
-          await delay(2500);
-          sock.sendMessage(Id, { react: { text: "🤖", key: sentMessage.key } });
+          reply(Id, "PING!!!", false, false, message, participants);
           console.log("[BOT] cmd:.tagall from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { tagallErr: error.message });
@@ -185,11 +192,7 @@ async function connectWhatsapp() {
         try {
           const metadata = await sock.groupMetadata(Id);
           const participants = metadata.participants.map((v) => v.id);
-
-          await delay(2000);
-          let sentMessage = await sock.sendMessage(Id, { text: msgCmd, mentions: participants, edit: message.key });
-          await delay(2500);
-          sock.sendMessage(Id, { react: { text: "🤖", key: sentMessage.key } });
+          reply(Id, msgCmd, false, false, message, participants)
           console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { tagErr: error.message });
