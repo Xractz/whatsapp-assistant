@@ -264,37 +264,38 @@ async function connectWhatsapp() {
     // }
   });
 
-  // sock.ev.on("call", async (calls) => {
-  //   let call = calls[0];
-  //   let number = call.from.split("@")[0];
+  sock.ev.on("call", async (calls) => {
+    let call = calls[0];
+    let number = call.from.split("@")[0];
 
-  //   if (!("status" in call && "isGroup" in call && "isVideo" in call)) return;
+    if (!("status" in call && "isGroup" in call && "isVideo" in call)) return;
 
-  //   const WACallEvent = {
-  //     status: call.status,
-  //     from: call.from,
-  //   };
+    const WACallEvent = {
+      status: call.status,
+      from: call.from,
+    };
 
-  //   switch (WACallEvent.status) {
-  //     case "ringing":
-  //       console.log("[BOT] Ringing Call from", number);
-  //       call.status = false;
-  //       break;
-  //     case "timeout":
-  //       console.log("[BOT] Missed Call from", number);
-  //       reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
-  //       break;
-  //     case "reject":
-  //       console.log("[BOT] Rijected Call from", number);
-  //       reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
-  //       break;
-  //     case "accept":
-  //       console.log("[BOT] Accepted Cal from", number);
-  //       await delay(1000);
-  //       call.status = false;
-  //       break;
-  //   }
-  // });
+    switch (WACallEvent.status) {
+      case "ringing":
+        console.log("[BOT] Ringing Call from", number);
+        call.status = false;
+        break;
+      case "timeout":
+        console.log("[BOT] Missed Call from", number);
+        reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
+        call.status = false;
+        break;
+      case "reject":
+        console.log("[BOT] Rijected Call from", number);
+        reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
+        call.status = false;
+        break;
+      case "accept":
+        console.log("[BOT] Accepted Cal from", number);
+        call.status = false;
+        break;
+    }
+  });
 }
 
 connectWhatsapp();
