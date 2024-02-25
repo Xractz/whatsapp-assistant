@@ -21,9 +21,7 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "session/*.json",
-      "members.json",
-      "*.json"
+      "session/*.json"
     ]
   },
   "author": "",

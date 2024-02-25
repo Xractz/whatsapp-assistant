@@ -1,11 +1,11 @@
 const { makeWASocket, useMultiFileAuthState, downloadMediaMessage, delay, getContentType } = require("@whiskeysockets/baileys");
+const { waMessageID } = require("@whiskeysockets/baileys/lib/Store/make-in-memory-store");
 const pino = require("pino");
 const { error } = require("qrcode-terminal");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require("dotenv").config();
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
-const fs = require("fs");
 
 async function connectWhatsapp() {
   const auth = await useMultiFileAuthState("session");
@@ -150,7 +150,6 @@ async function connectWhatsapp() {
         try {
           reply(Id, "Getting profile picture...", false, true, message);
           pp = msgCmd.replace(/\D/g, "");
-          if (pp.length === 0) return (pp = Id);
           ppId = pp + "@s.whatsapp.net";
           const ppUrl = await sock.profilePictureUrl(ppId, "image");
           await sock.sendMessage(Id, { image: { url: ppUrl } });
@@ -162,182 +161,97 @@ async function connectWhatsapp() {
         }
         break;
 
-      case "ev":
+      case "gpp":
         try {
-          let evaled = await eval(msgCmd);
-          if (typeof evaled !== "string") evaled = require("util").inspect(evaled);
-          reply(Id, `» ${evaled}`, false, true, message);
-        } catch (err) {
-          console.error(err);
-          reply(Id, `» Error: ${err.message}`, false, true, message);
-        }
-
-        break;
-
-      case "get":
-        try {
-          const metadata = await sock.groupMetadata(Id);
-          const participants = metadata.participants.map((v) => v.id);
-          fs.writeFileSync("members.json", JSON.stringify(participants));
-          const jmlMember = participants.length;
-          reply(Id, `Successfully get ${jmlMember} contacts...`, false, true, message);
-          console.log(`Successfully get ${jmlMember} contacts`);
+          reply(Id, "Getting profile picture...", false, true, message);
+          const ppUrl = await sock.profilePictureUrl(Id, "image");
+          await sock.sendMessage(Id, { image: { url: ppUrl } });
+          reply(Id, "Successfully get profile picture", false, true, message);
+          console.log("[BOT] cmd:.gpp from", Id.split("@")[0]);
         } catch (error) {
-          console.log("[ERROR]", { getErr: error.message });
-        }
-        break;
-
-      case "push":
-        try {
-          const participants = JSON.parse(fs.readFileSync("members.json"));
-          const metadata = await sock.groupMetadata(Id);
-          const groupParticipants = metadata.participants.map((v) => v.id);
-          const newParticipants = participants.filter((participant) => !groupParticipants.includes(participant));
-          const jmlMember = newParticipants.length;
-          reply(Id, `Adding ${jmlMember} contacts...`, false, true, message);
-
-          for (const participant of newParticipants) {
-            const response = await sock.groupParticipantsUpdate(Id, [participant], "add");
-            if (response[0].status === "200") {
-              reply(Id, `Successfully added contact ${participant}...`, false, true, message);
-            } else {
-              console.log(`Failed to add contact ${participant}`);
-            }
-            await delay(1200);
-          }
-
-          console.log(`[BOT] cmd:.push ${jmlMember} contacts from`, Id.split("@")[0]);
-          fs.unlink("members.json", (err) => {
-            if (err) {
-              reply(Id, "No contacts will be pushed in the database", false, true, message);
-              console.error(`[ERROR] ${err}`);
-            } else {
-              console.log("[SYSTEM] Successfully deleted members.json");
-            }
-          });
-        } catch (error) {
-          reply(Id, "No contacts will be pushed in the database", false, true, message);
-          console.log("[ERROR]", { pushErr: error.message });
+          console.log("[ERROR]", { ppErr: error.message });
         }
         break;
     }
-      
-      if (!isMe && isGroup) return;
-      switch (cmd) {
-        case "tagall":
-          try {
-            const metadata = await sock.groupMetadata(Id);
-            const participants = metadata.participants.map((v) => v.id);
-            reply(Id, "PING!!!", false, false, message, participants);
-            console.log("[BOT] cmd:.tagall from", Id.split("@")[0]);
-          } catch (error) {
-            console.log("[ERROR]", { tagallErr: error.message });
-          }
-          break;
-          
-          case "tag":
-            try {
-              const metadata = await sock.groupMetadata(Id);
-              const participants = metadata.participants.map((v) => v.id);
-              reply(Id, msgCmd, false, true, message, participants);
-              console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
-            } catch (error) {
-              console.log("[ERROR]", { tagErr: error.message });
-            }
-            break;
-            
-            case "rm":
-              try {
-                let no = msgCmd.split(" ");
-                let noMsg = no.join(", ");
-                no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
-                reply(Id, `Successfully remove ${noMsg}`, false, true, message, no);
-                const response = await sock.groupParticipantsUpdate(Id, no, "remove");
-                if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${noMsg} from`, Id.split("@"));
-              } catch (error) {
-                console.log("[ERROR]", { rmErr: error.message });
-              }
-              break;
-              
-              case "rmall":
-                try {
-                  const metadata = await sock.groupMetadata(Id);
-                  const groupParticipants = metadata.participants.map((v) => v.id);
-                  // reply(Id, `Successfully remove ${noMsg}`, false, true, message, no);
-                  const response = await sock.groupParticipantsUpdate(Id, groupParticipants, "remove");
-                  console.log(JSON.stringify(response))
-                  if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${groupParticipants} from`, Id.split("@"));
-                } catch (error) {
-                  console.log("[ERROR]", { rmErr: error.message });
-                }
-                break;
-                
-                case "rm":
-                  try {
-                    let no = msgCmd.split(" ");
-                    let noMsg = no.join(", ");
-                    no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
-                    reply(Id, `Successfully remove ${noMsg}`, false, true, message, no);
-                    const response = await sock.groupParticipantsUpdate(Id, no, "remove");
-                    if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${noMsg} from`, Id.split("@"));
-                  } catch (error) {
-                    console.log("[ERROR]", { rmErr: error.message });
-                  }
-                  break;
-                  
-                  case "add":
-                    try {
-                      let no = msgCmd.replace(/\D/g, "");
-                      let noId = no + "@s.whatsapp.net";
-                      reply(Id, `Successfully add @${no}`, false, true, message, [noId]);
-                      const response = await sock.groupParticipantsUpdate(Id, [noId], "add");
-                      if (response[0].status === "200") return console.log(`[BOT] cmd:.add ${noMsg} from`, Id.split("@")[0]);
-                    } catch (error) {
-                      console.log("[ERROR]", { addErr: error.message });
-                    }
-                    break;
-                    
-                    case "promote":
-                      try {
-                        let no = msgCmd.split(" ");
-                        let noMsg = no.join(", ");
-                        no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
-                        reply(Id, `Successfully promote ${noMsg}`, false, true, message, no);
-                        const response = await sock.groupParticipantsUpdate(Id, no, "promote");
-                        if (response[0].status === "200") return console.log(`[BOT] cmd:.promote ${noMsg} from`, Id.split("@")[0]);
-                      } catch (error) {
-                        console.log("[ERROR]", { promoteErr: error.message });
-                      }
-                      break;
-                      
-                      case "demote":
-                        try {
-                          let no = msgCmd.split(" ");
-                          let noMsg = no.join(", ");
-                          no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
-                          reply(Id, `Successfully demote ${noMsg}`, false, true, message, no);
-                          const response = await sock.groupParticipantsUpdate(Id, no, "demote");
-                          if (response[0].status === "200") return console.log(`[BOT] cmd:.demote ${noMsg} from`, Id.split("@")[0]);
-                        } catch (error) {
-                          console.log("[ERROR]", { demoteErr: error.message });
-                        }
-                        break;
 
-                        case "gpp":
-                          try {
-                            reply(Id, "Getting profile picture...", false, true, message);
-                            const ppUrl = await sock.profilePictureUrl(Id, "image");
-                            await sock.sendMessage(Id, { image: { url: ppUrl } });
-                            reply(Id, "Successfully get profile picture", false, true, message);
-                            console.log("[BOT] cmd:.gpp from", Id.split("@")[0]);
-                          } catch (error) {
-                            console.log("[ERROR]", { ppErr: error.message });
-                          }
-                          break;
-                      }
-                      
-                      // switch (type) {
-                        //   case "append":
+    if (!isMe && isGroup) return;
+    switch (cmd) {
+      case "tagall":
+        try {
+          const metadata = await sock.groupMetadata(Id);
+          const participants = metadata.participants.map((v) => v.id);
+          reply(Id, "PING!!!", false, false, message, participants);
+          console.log("[BOT] cmd:.tagall from", Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { tagallErr: error.message });
+        }
+        break;
+
+      case "tag":
+        try {
+          const metadata = await sock.groupMetadata(Id);
+          const participants = metadata.participants.map((v) => v.id);
+          reply(Id, msgCmd, false, false, message, participants)
+          console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { tagErr: error.message });
+        }
+        break;
+
+      case "rm":
+        try {
+          let no = msgCmd.split(" ");
+          let noMsg = no.join(", ");
+          no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
+          reply(Id, `Successfully remove ${noMsg}`, false, true, message, no);
+          const response = await sock.groupParticipantsUpdate(Id, no, "remove");
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.rm ${no} from`, Id.split("@"));
+        } catch (error) {
+          console.log("[ERROR]", { rmErr: error.message });
+        }
+        break;
+
+      case "add":
+        try {
+          let no = msgCmd.replace(/\D/g, "");
+          let noId = no + "@s.whatsapp.net";
+          reply(Id, `Successfully add @${no}`, false, true, message, [noId]);
+          const response = await sock.groupParticipantsUpdate(Id, [noId], "add");
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.add ${no} from`, Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { addErr: error.message });
+        }
+        break;
+
+      case "promote":
+        try {
+          let no = msgCmd.split(" ");
+          let noMsg = no.join(", ");
+          no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
+          reply(Id, `Successfully promote ${noMsg}`, false, true, message, no);
+          const response = await sock.groupParticipantsUpdate(Id, no, "promote");
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.promote ${no} from`, Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { promoteErr: error.message });
+        }
+        break;
+
+      case "demote":
+        try {
+          let no = msgCmd.split(" ");
+          let noMsg = no.join(", ");
+          no = no.map((no) => no.replace("@", "") + "@s.whatsapp.net");
+          reply(Id, `Successfully demote ${noMsg}`, false, true, message, no);
+          const response = await sock.groupParticipantsUpdate(Id, no, "demote");
+          if (response[0].status === "200") return console.log(`[BOT] cmd:.demote ${no} from`, Id.split("@")[0]);
+        } catch (error) {
+          console.log("[ERROR]", { demoteErr: error.message });
+        }
+        break;
+    }
+
+    // switch (type) {
+    //   case "append":
     //     console.log("INI APPEND\n", message);
     //     break;
     //   case "notify":
