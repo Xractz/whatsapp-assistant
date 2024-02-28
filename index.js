@@ -1,5 +1,4 @@
-const { makeWASocket, useMultiFileAuthState, downloadMediaMessage, delay, getContentType } = require("@whiskeysockets/baileys");
-const { waMessageID } = require("@whiskeysockets/baileys/lib/Store/make-in-memory-store");
+const { makeWASocket, useMultiFileAuthState, downloadMediaMessage, delay, getContentType, makeCacheManagerAuthState } = require("@whiskeysockets/baileys");
 const pino = require("pino");
 const { error } = require("qrcode-terminal");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -27,7 +26,7 @@ async function connectWhatsapp() {
   });
 
   async function reply(Id, text, quoted = false, reactions = false, editMsg = false, mention = false) {
-    await delay(2500);
+    await delay(1500);
     let messageObj = { text: text };
 
     if (editMsg) {
@@ -39,9 +38,12 @@ async function connectWhatsapp() {
     }
     const sentMessage = await sock.sendMessage(Id, messageObj, quoted ? { quoted: quoted } : {});
 
-    if (reactions) return;
-    await delay(2500);
-    sock.sendMessage(Id, { react: { text: "🤖", key: sentMessage.key } });
+    if (!reactions) {
+      await delay(2500);
+      sock.sendMessage(Id, { react: { text: "🤖", key: sentMessage.key } });
+    }
+
+    return sentMessage;
   }
 
   async function getBuffer(msg) {
@@ -50,10 +52,10 @@ async function connectWhatsapp() {
     return buffer;
   }
 
-  async function generateAi(msg) {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const prompt = msg;
-    const result = await model.generateContent(prompt);
+  async function generateAi(prompt, image) {
+    const model = genAI.getGenerativeModel(image ? { model: "gemini-pro-vision" } : { model: "gemini-pro" });
+    const aiType = image ? [prompt, ...image] : prompt;
+    const result = await model.generateContent(aiType);
     const response = await result.response;
     const text = response.text();
     return text;
@@ -110,18 +112,35 @@ async function connectWhatsapp() {
 
       case "ai":
         try {
-          reply(Id, "waitt..", false, true, message);
-          const prompt = await generateAi(msgCmd).catch((error) => {
-            reply(Id, `[ERROR] ${error.message}`, false, true, message);
-            return console.log("[ERROR]", { aiErr: error.message });
-          });
-          reply(Id, `Powered by *Gemini AI*\n\n*AI Prompt :* \`\`\`${msgCmd}\`\`\`\n\n${prompt}`, false, false, message);
+          var typeAi = JSON.stringify(message).includes("imageMessage");
+          if (typeAi) {
+            let mediaBuffer = quoted ? { message: quoted } : message;
+            var buffer = await getBuffer(mediaBuffer);
+
+            var data = {
+              inlineData: {
+                data: buffer.toString("base64"),
+                mimeType: "image/jpeg",
+              },
+            };
+
+            data = [data];
+          }
+
+          const msgType = typeAi ? [msgCmd, data] : [msgCmd];
+          const prompt = await generateAi(...msgType);
+
+          reply(Id, prompt, message, true);
+          sock.sendMessage(Id, { react: { text: "✅", key: message.key } });
           console.log("[BOT] cmd:.ai from", Id.split("@")[0]);
         } catch (error) {
+          reply(Id, error.message, message, true);
+          sock.sendMessage(Id, { react: { text: "❌", key: message.key } });
           console.log("[ERROR]", { aiErr: error.message });
         }
-        break;
 
+        break;
+        
       case "sticker":
         try {
           reply(Id, "Converting to sticker...", false, true, message);
@@ -136,6 +155,7 @@ async function connectWhatsapp() {
             quality: 70,
             background: "transparent",
           }).build();
+
           sock.sendMessage(Id, { sticker });
           reply(Id, "Successfully convert media to sticker", false, true, message);
           console.log("[BOT] cmd:.sticker from", Id.split("@")[0]);
@@ -191,7 +211,7 @@ async function connectWhatsapp() {
         try {
           const metadata = await sock.groupMetadata(Id);
           const participants = metadata.participants.map((v) => v.id);
-          reply(Id, msgCmd, false, false, message, participants)
+          reply(Id, msgCmd, false, false, message, participants);
           console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { tagErr: error.message });
@@ -264,38 +284,38 @@ async function connectWhatsapp() {
     // }
   });
 
-  sock.ev.on("call", async (calls) => {
-    let call = calls[0];
-    let number = call.from.split("@")[0];
+  // sock.ev.on("call", async (calls) => {
+  //   let call = calls[0];
+  //   let number = call.from.split("@")[0];
 
-    if (!("status" in call && "isGroup" in call && "isVideo" in call)) return;
+  //   if (!("status" in call && "isGroup" in call && "isVideo" in call)) return;
 
-    const WACallEvent = {
-      status: call.status,
-      from: call.from,
-    };
+  //   const WACallEvent = {
+  //     status: call.status,
+  //     from: call.from,
+  //   };
 
-    switch (WACallEvent.status) {
-      case "ringing":
-        console.log("[BOT] Ringing Call from", number);
-        call.status = false;
-        break;
-      case "timeout":
-        console.log("[BOT] Missed Call from", number);
-        reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
-        call.status = false;
-        break;
-      case "reject":
-        console.log("[BOT] Rijected Call from", number);
-        reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
-        call.status = false;
-        break;
-      case "accept":
-        console.log("[BOT] Accepted Cal from", number);
-        call.status = false;
-        break;
-    }
-  });
+  //   switch (WACallEvent.status) {
+  //     case "ringing":
+  //       console.log("[BOT] Ringing Call from", number);
+  //       call.status = false;
+  //       break;
+  //     case "timeout":
+  //       console.log("[BOT] Missed Call from", number);
+  //       reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
+  //       call.status = false;
+  //       break;
+  //     case "reject":
+  //       console.log("[BOT] Rijected Call from", number);
+  //       reply(WACallEvent.from, "Maaf, saat ini Samuel tidak dapat dihubungi. Silakan tinggalkan pesan Anda.\nTerimakasih.");
+  //       call.status = false;
+  //       break;
+  //     case "accept":
+  //       console.log("[BOT] Accepted Cal from", number);
+  //       call.status = false;
+  //       break;
+  //   }
+  // });
 }
 
 connectWhatsapp();
