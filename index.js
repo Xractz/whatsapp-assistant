@@ -81,6 +81,10 @@ async function connectWhatsapp() {
     if (message?.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
       try {
         var quoted = message.message?.extendedTextMessage?.contextInfo?.quotedMessage || {};
+        var quotedMsg =
+          message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
+          message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage?.caption ||
+          message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage?.caption;
         var quotedMime = getContentType(quoted);
         var quotedViewOnce = quoted[quotedMime]?.message || {};
         var quotedViewOnceMime = getContentType(quoted[quotedMime].message);
@@ -140,7 +144,7 @@ async function connectWhatsapp() {
         }
 
         break;
-        
+
       case "sticker":
         try {
           reply(Id, "Converting to sticker...", false, true, message);
@@ -194,27 +198,17 @@ async function connectWhatsapp() {
         break;
     }
 
-    if (!isMe && isGroup) return;
+    if (!isMe && !isGroup) return;
     switch (cmd) {
       case "tagall":
         try {
           const metadata = await sock.groupMetadata(Id);
           const participants = metadata.participants.map((v) => v.id);
-          reply(Id, "PING!!!", false, false, message, participants);
+          reply(Id, quotedMsg ? quotedMsg : "PING!!!", msgQuoted, true, false, participants);
+          sock.sendMessage(Id, { react: { text: "✅", key: message.key } });
           console.log("[BOT] cmd:.tagall from", Id.split("@")[0]);
         } catch (error) {
           console.log("[ERROR]", { tagallErr: error.message });
-        }
-        break;
-
-      case "tag":
-        try {
-          const metadata = await sock.groupMetadata(Id);
-          const participants = metadata.participants.map((v) => v.id);
-          reply(Id, msgCmd, false, false, message, participants);
-          console.log("[BOT] cmd:.tag from", Id.split("@")[0]);
-        } catch (error) {
-          console.log("[ERROR]", { tagErr: error.message });
         }
         break;
 
