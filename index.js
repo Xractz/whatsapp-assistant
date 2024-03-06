@@ -84,7 +84,8 @@ async function connectWhatsapp() {
         var quotedMsg =
           message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
           message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage?.caption ||
-          message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage?.caption;
+          message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage?.caption ||
+          message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text;
         var quotedMime = getContentType(quoted);
         var quotedViewOnce = quoted[quotedMime]?.message || {};
         var quotedViewOnceMime = getContentType(quoted[quotedMime].message);
@@ -142,7 +143,6 @@ async function connectWhatsapp() {
           sock.sendMessage(Id, { react: { text: "❌", key: message.key } });
           console.log("[ERROR]", { aiErr: error.message });
         }
-
         break;
 
       case "sticker":
@@ -204,7 +204,18 @@ async function connectWhatsapp() {
         try {
           const metadata = await sock.groupMetadata(Id);
           const participants = metadata.participants.map((v) => v.id);
-          reply(Id, quotedMsg ? quotedMsg : "PING!!!", msgQuoted, true, false, participants);
+          sock.sendMessage(
+            Id,
+            {
+              text: quotedMsg ? quotedMsg : "PING!!!",
+              contextInfo: {
+                forwardingScore: 4,
+                isForwarded: true,
+              },
+              mentions: participants,
+            },
+            { quoted: message }
+          );
           sock.sendMessage(Id, { react: { text: "✅", key: message.key } });
           console.log("[BOT] cmd:.tagall from", Id.split("@")[0]);
         } catch (error) {
