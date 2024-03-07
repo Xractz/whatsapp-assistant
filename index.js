@@ -209,7 +209,7 @@ async function connectWhatsapp() {
             {
               text: quotedMsg ? quotedMsg : "PING!!!",
               contextInfo: {
-                forwardingScore: 4,
+                forwardingScore: 10,
                 isForwarded: true,
               },
               mentions: participants,
